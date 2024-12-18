@@ -5,12 +5,10 @@ type NewsItem = {
 };
 
 async function getTT(page: number): Promise<any> {
-	const init = {
-		headers: {
-			'content-type': 'application/json;charset=UTF-8',
-		},
-	};
-	const ttRequest = await fetch(`https://teletekst-data.nos.nl/json/${page}`, init);
+	const ttRequest = await fetch(`https://teletekst-data.nos.nl/json/${page}`);
+	if (!ttRequest.ok) {
+		throw new Error('Pagina niet gevonden');
+	}
 	return ttRequest.json();
 }
 
