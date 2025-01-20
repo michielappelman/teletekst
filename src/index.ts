@@ -4,6 +4,11 @@ type NewsItem = {
 	category: string;
 };
 
+type NewsScrape = {
+	items: NewsItem[];
+	timestamp: number;
+};
+
 async function getTT(page: number): Promise<any> {
 	const ttRequest = await fetch(`https://teletekst-data.nos.nl/json/${page}`);
 	if (!ttRequest.ok) {
@@ -58,7 +63,13 @@ export default {
 			return new Response('No news items found', { status: 404 });
 		}
 
-		const newsItems: NewsItem[] = JSON.parse(data);
+		const newsScrape: NewsScrape = JSON.parse(data);
+		const timestamp = new Date(newsScrape.timestamp);
+		const time = timestamp.toLocaleTimeString('en-US', {
+			hour12: false,
+			hour: '2-digit',
+			minute: '2-digit',
+		});
 
 		// Generate HTML content
 		const htmlContent = `
@@ -67,7 +78,7 @@ export default {
       <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Latest News</title>
+          <title>Teletekst Nieuws</title>
           <style>
               :root {
                   --color-background: #fcfcfa;
@@ -122,7 +133,7 @@ export default {
 
       <h1>NOS Nieuws</h1>
       ${Object.entries(
-			newsItems.reduce((acc: Record<string, NewsItem[]>, item) => {
+			newsScrape.items.reduce((acc: Record<string, NewsItem[]>, item) => {
 				if (!acc[item.category]) {
 					acc[item.category] = [];
 				}
@@ -152,7 +163,7 @@ export default {
 				.join('')}
 
       <footer>
-        <p>&copy; 2024 NOS</p>
+        <p>&copy; ${timestamp.getFullYear()} NOS &ndash; ${time}</p>
       </footer>
 
       <script>
@@ -196,7 +207,12 @@ export default {
 			}
 		}
 
-		await env.KV.put('news-items', JSON.stringify(allNewsItems));
+		const scrapedNews: NewsScrape = {
+			timestamp: Date.now(),
+			items: allNewsItems,
+		};
+
+		await env.KV.put('news-items', JSON.stringify(scrapedNews));
 		console.log(`Stored ${allNewsItems.length} news items.`);
 	},
 };
